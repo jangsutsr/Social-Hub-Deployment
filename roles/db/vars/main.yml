@@ -1,0 +1,11 @@
+env:
+  RUNLEVEL: 1
+
+mysql_pkgs:
+  - libselinux-python
+  - mysql-community-server
+  - MySQL-python
+
+mysql_service: mysqld
+
+mysql_conf_dir: "/etc"

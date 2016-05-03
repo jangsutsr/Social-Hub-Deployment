@@ -1,0 +1,48 @@
+---
+- include_vars: users.yml
+
+- name: Install mysql packages and dependencies
+  yum: name={{ item }} state=installed
+  with_items: mysql_pkgs
+  sudo: yes
+
+- name: Copy configuration file
+  template: src=my.cnf.j2 dest={{ mysql_conf_dir }}/my.cnf
+  sudo: yes
+  notify:
+    - restart mysql
+
+- name: Create directory /etc/mysql/conf.d
+  file: path=/etc/mysql/conf.d state=directory
+  sudo: yes
+  notify:
+    - restart mysql
+
+- name: Start mysql service
+  service: name={{ mysql_service }} state=started enabled=yes
+  sudo: yes
+
+- name: Update root passwd
+  mysql_user: name=root 
+              host=localhost 
+              password="{{ mysql_root_db_pass }}"
+              login_user=root
+              login_password="{{ mysql_root_db_pass }}"
+              check_implicit_admin=yes
+              priv="*.*:ALL,GRANT"
+
+- name: Copy .my.cnf with root password credentials
+  template: src=.my.cnf.j2 dest=/home/ec2-user/.my.cnf mode=0600
+  sudo: yes
+
+- name: Create databases
+  mysql_db: name={{ item.name }} state=present
+  with_items: mysql_db
+
+- name: Create users
+  mysql_user: name={{ item.name }}
+              password={{ item.pass|default("foobar") }}
+              priv={{ item.priv|default("*.*.ALL") }}
+              state=present
+              host={{ item.host|default("%") }}
+  with_items: mysql_users
