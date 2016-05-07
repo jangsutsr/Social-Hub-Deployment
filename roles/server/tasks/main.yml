@@ -1,0 +1,51 @@
+---
+
+- name: check if pip is installed
+  command: "pip --version"
+  ignore_errors: true
+  register: pip_is_installed
+
+- name: download get-pip.py if needed
+  get_url: url=https://bootstrap.pypa.io/get-pip.py dest=/tmp
+  when: pip_is_installed.rc != 0
+
+- name: install pip if needed
+  command: "python /tmp/get-pip.py"
+  sudo: yes
+  when: pip_is_installed.rc != 0
+
+- name: Install Dependencies
+  yum: name={{ item }} state=installed
+  with_items:
+  - python-devel
+  - gcc
+  - libselinux-python
+  - MySQL-python
+  - git
+  sudo: yes
+
+- name: Install python packages
+  pip: name={{ item }} state=present
+  with_items:
+  - uwsgi
+  - django
+  sudo: yes
+
+- name: Remove original repo if exists
+  shell: "rm -rf SocialHub/"
+  sudo: yes
+
+- name: Clone/update git repo
+  git: repo=https://github.com/qychen/SocialHub.git
+       dest=/home/ec2-user/SocialHub
+
+- name: Copy configuration files to position
+  template: src={{ item.src }} dest={{ item.dest }}
+  with_items:
+  - src: db_user.cnf
+    dest: /home/ec2-user/SocialHub/SocialHub/db_user.cnf
+  - src: server.ini
+    dest: /home/ec2-user/server.ini
+  - src: restart.sh
+    dest: /home/ec2-user/restart.sh
+  sudo: yes

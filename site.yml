@@ -8,3 +8,12 @@
 
   roles:
   - db
+
+- name: deploy web server
+  hosts: web
+  remote_user: ec2-user
+  become: yes
+  gather_facts: yes
+
+  roles:
+  - server
